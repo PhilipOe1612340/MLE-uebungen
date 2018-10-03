@@ -1,7 +1,7 @@
 import math
 from random import randint
 
-nrOfTowns = 1000
+nrOfTowns = 100
 coordinateX = 1000
 coordinateY = 1000
 maxIteration = 100000
@@ -47,7 +47,7 @@ def tripDistance(trip, distances):
         currentTown = trip[i]
         nextTown = trip[i+1]
         sum += distances[currentTown][nextTown]
-    sum += distances[len(trip) - 1][0]
+    sum += distances[trip[len(trip) - 1]][trip[0]]
     return sum
 
 
