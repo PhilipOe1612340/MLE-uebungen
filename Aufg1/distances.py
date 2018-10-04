@@ -1,12 +1,14 @@
 import math
 from random import randint
-import matplotlip.pyplot as plt
+import matplotlib.pyplot as plt
 
-nrOfTowns = 100
+nrOfTowns = 1000
 coordinateX = 1000
 coordinateY = 1000
 maxIteration = 1000
 threshold = 5
+plotArrayX = []
+plotArrayY = []
 
 # Returns random coordinates for a number of towns
 def getCoordinates(nr):
@@ -99,13 +101,15 @@ for i in range(maxIteration):
         print("improved by: " + str(tripDistance(trip, dist) - tripDistance(result, dist))) 
         print("fitness: -" + str(tripDistance(result, dist)))                                                   
         trip = result
-        plt.plot(i, result)
+        plotArrayX.append(i)
+        plotArrayY.append(tripDistance(result, dist))
     else:
         print("step count:" + str(i))
         break
 print("best trip found:")
 print(trip)
 print(tripDistance(trip, dist))
+plt.plot(plotArrayX, plotArrayY)
 plt.show()
 
 
