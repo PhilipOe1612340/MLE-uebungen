@@ -95,7 +95,8 @@ print(tripDistance(trip, dist))
 for i in range(maxIteration):
     result = climbOneStep(trip, dist)
     if result:
-        # print("improved by: " + str(tripDistance(trip, dist) - tripDistance(result, dist)))                                                    
+        print("improved by: " + str(tripDistance(trip, dist) - tripDistance(result, dist))) 
+        print("fitness: -" + str(tripDistance(result, dist)))                                                   
         trip = result
     else:
         print("step count:" + str(i))
