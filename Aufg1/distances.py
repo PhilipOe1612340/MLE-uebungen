@@ -1,10 +1,11 @@
 import math
 from random import randint
+import matplotlip.pyplot as plt
 
 nrOfTowns = 100
 coordinateX = 1000
 coordinateY = 1000
-maxIteration = 100000
+maxIteration = 1000
 threshold = 5
 
 # Returns random coordinates for a number of towns
@@ -54,7 +55,7 @@ def tripDistance(trip, distances):
 # switch two random towns
 def getNewTrip(trip):
     # starting position of roundtrip remains the same
-    cloneTrip = trip.copy()
+    cloneTrip = trip[:]
     change1 = randint(1, len(cloneTrip) - 1)
     change2 = randint(1, len(cloneTrip) - 1)
     temp = cloneTrip[change1]
@@ -98,11 +99,13 @@ for i in range(maxIteration):
         print("improved by: " + str(tripDistance(trip, dist) - tripDistance(result, dist))) 
         print("fitness: -" + str(tripDistance(result, dist)))                                                   
         trip = result
+        plt.plot(i, result)
     else:
         print("step count:" + str(i))
         break
 print("best trip found:")
 print(trip)
 print(tripDistance(trip, dist))
+plt.show()
 
 
