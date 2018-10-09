@@ -1,14 +1,10 @@
 // @ts-check
 
-const mutationRate = 0.1;
-const populationSize = 100;
+const mutationRate = 0.08;
+const populationSize = 50;
 
-const startPoint = {
-	x: 400,
-	y: 700
-};
-const maxForce = 5;
-const applyFactor = 0.3;
+const maxForce = 1.5;
+const applyFactor = 0.8;
 const flightTime = 200;
 
 let rockets = new Array(populationSize);
@@ -53,7 +49,6 @@ function orgie(rockets) {
 			nextGen.push(partner.fuck(r))
 		}
 	});
-	console.log(nextGen.length);
 	console.log(sorted[0].calculateFitness())
 
 	if (nextGen.length > populationSize) {
@@ -77,7 +72,7 @@ function mutate(nextGen) {
 }
 
 function getsPicked(idx) {
-	const probability = 3 / idx
+	const probability = 2 / idx
 	const rand = Math.random();
 	return rand < probability;
 }
@@ -91,7 +86,7 @@ function mouseDragged() {
 	goal.position.x = mouseX;
 	goal.position.y = mouseY;
 
-  }
+}
 
 
 class Rocket {
@@ -102,7 +97,10 @@ class Rocket {
 			this.vectorArray = this.generateDirectionsArray(flightTime);
 		}
 
-		this.position = startPoint;
+		this.position = {
+			x: width / 2,
+			y: height * 0.9
+		};
 		this.size = 5;
 		this.bestDistance = 10000;
 		this.alive = true;
@@ -121,18 +119,21 @@ class Rocket {
 	}
 
 	draw(obstacles, goal) {
-		if (!this.alive) return;
+		if (!this.alive) {
+			stroke(255, 0, 0);
+			ellipse(this.position.x, this.position.y, this.size / 2, this.size / 2);
+			return;
+		}
 
 		this.fly(time);
 
 		if (this.detectCrashes(obstacles)) {
-			console.log('killed');
 			this.bestDistance *= 5;
 			this.alive = false;
 		}
 		let currentDistance = this.distanceToGoal(goal);
 
-		if (currentDistance < this.size + goal.radius) {
+		if (currentDistance < 20) {
 			currentDistance = 0;
 			this.alive = false;
 		}
@@ -170,7 +171,7 @@ class Rocket {
 	}
 
 	isOutOfScreen() {
-		return this.position.x < 0 || this.position.x > 800 || this.position.y < 0 || this.position.y > 800;
+		return this.position.x < 0 || this.position.x > width || this.position.y < 0 || this.position.y > height;
 	}
 
 	calculateFitness() {
@@ -218,6 +219,7 @@ class Obstacle {
 
 	draw() {
 		fill(0, 0, 40);
+		stroke(255);
 		rect(this.x, this.y, this.w, this.h);
 	}
 }
@@ -232,6 +234,7 @@ class Goal {
 	}
 
 	draw() {
+		stroke(255);
 		fill(255, 0, 0);
 		ellipse(this.position.x, this.position.y, this.radius, this.radius);
 	}
