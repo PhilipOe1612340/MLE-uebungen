@@ -1,11 +1,12 @@
 // @ts-check
 
-const mutationRate = 0.08;
+const mutationRate = 0.2;
 const populationSize = 50;
+const replacementRatio = 0.8;
 
-const maxForce = 1.5;
-const applyFactor = 0.8;
-const flightTime = 200;
+const maxForce = 2;
+const applyFactor = 0.3;
+const flightTime = 180;
 
 let rockets = new Array(populationSize);
 let obstacles = [];
@@ -22,72 +23,78 @@ function setup() {
 	obstacles.push(new Obstacle(300, 400, 100, 20));
 	obstacles.push(new Obstacle(600, 500, 100, 20));
 	goal = new Goal();
-	// frameRate(1)
 }
 
 function draw() {
 	background(0);
+
+	//draw objects
 	goal.draw();
 	obstacles.forEach(o => o.draw());
+
+	// draw object
 	rockets.forEach(r => r.draw(obstacles, goal));
 	let rocketsAlive = rockets.filter(r => r.alive).length;
+
+	//generate new population if time is over or all rockets are crashed
 	if (time >= flightTime - 1 || rocketsAlive === 0) {
-		rockets = orgie(rockets);
+		rockets = makeNewGeneration(rockets);
 		time = 0;
 	} else {
 		time++;
 	}
 }
 
-function orgie(rockets) {
-	let nextGen = [];
-	let sorted = rockets.sort((r1, r2) => r2.calculateFitness() - r1.calculateFitness())
-	sorted.forEach((r, i, rockets) => {
-		if (getsPicked(i)) {
-			const partner = rockets.find((_rocket, i, r) => getsPicked(i))
-			nextGen.push(r.fuck(partner))
-			nextGen.push(partner.fuck(r))
+function makeNewGeneration(rockets) {
+	rockets = rockets.sort((r1, r2) => r2.calculateFitness() - r1.calculateFitness());
+	console.log(rockets[0].calculateFitness())
+	let nextGen = new Array(Math.floor(populationSize * replacementRatio)).fill(null).map(() => pick(rockets));
+	nextGen = nextGen.map((rocket, idx, allRockets) => {
+		if (idx % 2 === 0) {
+			return rocket.crossWith(allRockets[idx + 1]);
+		} else {
+			return rocket.crossWith(allRockets[idx - 1]);
 		}
-	});
-	console.log(sorted[0].calculateFitness())
+	})
+	return mutate(nextGen).concat(rockets.slice(0, populationSize - nextGen.length).map(r => r.revive()));
+}
 
-	if (nextGen.length > populationSize) {
-		nextGen = nextGen.slice(0, populationSize);
+
+function pick(rockets) {
+	let fitnessSum = rockets.reduce((sum, current) => sum + current.calculateFitness(), 0);
+	let rand = Math.random();
+	let sum = 0;
+	for (let idx = 0; idx < rockets.length; idx++) {
+		const rocket = rockets[idx];
+		sum += rocket.calculateFitness() / fitnessSum;
+		if (sum > rand) {
+			return rocket;
+		}
 	}
-	nextGen = nextGen.concat(sorted.slice(0, populationSize - nextGen.length).map(r => new Rocket(r.vectorArray)))
-	return mutate(nextGen);
 }
 
 function mutate(nextGen) {
-	return nextGen.map(rocket => {
-		rocket.vectorArray.map(vector => {
-			if (Math.random() < mutationRate) {
-				vector.x = randomNumber();
-				vector.y = randomNumber();
+	nextGen.forEach(rocket => {
+		let rand = Math.random();
+		if (rand < mutationRate) {
+			let mutateCount = Math.random() * flightTime / 15;
+			for (let idx = 0; idx < mutateCount; idx++) {
+				let randIdx = Math.floor(Math.random() * flightTime);
+				rocket.vectorArray[randIdx] = new Vector(randomNumber(), randomNumber());
 			}
-			return vector;
-		})
-		return rocket;
-	})
-}
-
-function getsPicked(idx) {
-	const probability = 2 / idx
-	const rand = Math.random();
-	return rand < probability;
+		}
+	});
+	return nextGen
 }
 
 function randomNumber() {
-	return Math.random() * maxForce - maxForce / 2
+	return Math.random() * maxForce * 2 - maxForce;
 }
-
 
 function mouseDragged() {
 	goal.position.x = mouseX;
 	goal.position.y = mouseY;
-
 }
-
 
 class Rocket {
 	constructor(vectorArray) {
@@ -101,27 +108,33 @@ class Rocket {
 			x: width / 2,
 			y: height * 0.9
 		};
+
+
 		this.size = 5;
 		this.bestDistance = 10000;
 		this.alive = true;
 		this.velocity = new Vector(0, 1);
+		this.hitTime = null
 	}
 
 	fly(time) {
-		const gravity = 0;
 		const currentVector = this.vectorArray[time];
 		this.velocity = this.velocity.addToPosition(currentVector);
-		this.velocity.y += gravity;
 		this.position = {
 			x: this.position.x + this.velocity.x,
-			y: this.position.y - this.velocity.y
+			y: this.position.y - this.velocity.y,
 		};
 	}
 
 	draw(obstacles, goal) {
 		if (!this.alive) {
 			stroke(255, 0, 0);
-			ellipse(this.position.x, this.position.y, this.size / 2, this.size / 2);
+			ellipse(
+				this.position.x,
+				this.position.y,
+				this.size / 2,
+				this.size / 2
+			);
 			return;
 		}
 
@@ -135,6 +148,7 @@ class Rocket {
 
 		if (currentDistance < 20) {
 			currentDistance = 0;
+			this.hitTime = time;
 			this.alive = false;
 		}
 		if (currentDistance < this.bestDistance) {
@@ -146,55 +160,71 @@ class Rocket {
 	}
 
 	detectCrashes(obstacles) {
-		return this.isOutOfScreen() || obstacles.some(rect => {
-			let distX = Math.abs(this.position.x - rect.x - rect.w / 2);
-			let distY = Math.abs(this.position.y - rect.y - rect.h / 2);
+		return (
+			this.isOutOfScreen() ||
+			obstacles.some(rect => {
+				let distX = Math.abs(this.position.x - rect.x - rect.w / 2);
+				let distY = Math.abs(this.position.y - rect.y - rect.h / 2);
 
-			if (distX > (rect.w / 2 + this.size)) {
-				return false;
-			}
-			if (distY > (rect.h / 2 + this.size)) {
-				return false;
-			}
+				if (distX > rect.w / 2 + this.size) {
+					return false;
+				}
+				if (distY > rect.h / 2 + this.size) {
+					return false;
+				}
 
-			if (distX <= (rect.w / 2)) {
-				return true;
-			}
-			if (distY <= (rect.h / 2)) {
-				return true;
-			}
+				if (distX <= rect.w / 2) {
+					return true;
+				}
+				if (distY <= rect.h / 2) {
+					return true;
+				}
 
-			let dx = distX - rect.w / 2;
-			let dy = distY - rect.h / 2;
-			return (dx * dx + dy * dy <= (this.size * this.size));
-		})
+				let dx = distX - rect.w / 2;
+				let dy = distY - rect.h / 2;
+				return dx * dx + dy * dy <= this.size * this.size;
+			})
+		);
 	}
 
 	isOutOfScreen() {
-		return this.position.x < 0 || this.position.x > width || this.position.y < 0 || this.position.y > height;
+		return (
+			this.position.x < 0 ||
+			this.position.x > width ||
+			this.position.y < 0 ||
+			this.position.y > height
+		);
 	}
 
 	calculateFitness() {
-		return this.bestDistance * -1;
+		if (this.bestDistance === 0) {
+			return 1 - this.hitTime / (flightTime * 2);
+		}
+		return 1 / this.bestDistance;
 	}
 
 	distanceToGoal(goal) {
 		let x = this.position.x - goal.position.x;
 		let y = this.position.y - goal.position.y;
-		return Math.sqrt((x * x) + (y * y));
+		return Math.sqrt(x * x + y * y);
 	}
 
 	generateDirectionsArray(length) {
-		return new Array(length).fill(null).map(() => new Vector(randomNumber(), randomNumber()));
+		return new Array(length)
+			.fill(null)
+			.map(() => new Vector(randomNumber(), randomNumber()));
 	}
 
-	fuck(partner) {
+	crossWith(partner) {
 		const splitPoint = Math.random() * this.vectorArray.length;
 		const myDNA = this.vectorArray.slice(0, splitPoint);
 		const partnerDNA = partner.vectorArray.slice(splitPoint);
 		return new Rocket(myDNA.concat(partnerDNA));
 	}
 
+	revive() {
+		return new Rocket(this.vectorArray);
+	}
 }
 
 class Vector {
@@ -204,10 +234,12 @@ class Vector {
 	}
 
 	addToPosition(position) {
-		return new Vector(this.x + position.x * applyFactor, this.y + position.y * applyFactor);
+		return new Vector(
+			this.x + position.x * applyFactor,
+			this.y + position.y * applyFactor
+		);
 	}
 }
-
 
 class Obstacle {
 	constructor(x, y, w, h) {
