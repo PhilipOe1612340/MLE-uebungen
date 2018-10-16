@@ -15,6 +15,7 @@ let obstacles = [];
 let goal;
 let time = 0;
 let generationCounter = 0;
+let bestHistory = [];
 
 function setup() {
     createCanvas(800, 800);
@@ -51,6 +52,8 @@ function draw() {
         time++;
     }
 
+    drawHistory(bestHistory);
+
     // draw text
     fill(0, 102, 153);
     stroke(0);
@@ -69,7 +72,7 @@ function makeNewGeneration(rockets) {
     // sort rockets by fitness
     rockets = rockets.sort((r1, r2) => r2.calculateFitness() - r1.calculateFitness());
 
-    console.log(rockets[0].calculateFitness());
+    bestHistory = rockets[0].history;
 
     // pick rockets in mating pool
     let nextGen = new Array(Math.floor(populationSize * replacementRatio))
@@ -146,7 +149,7 @@ function mouseDragged() {
 function makeObstacles() {
     const obst = [];
     for (let i = 0; i < nrOfObstacles; i++) {
-        obst.push(new Obstacle(Math.random() * width, Math.random() * height, Math.random() * 100 + 50,  Math.random() * 20 + 20));
+        obst.push(new Obstacle(Math.random() * width, Math.random() * height, Math.random() * 100 + 50, Math.random() * 20 + 20));
     }
     return obst;
 }
@@ -157,8 +160,18 @@ function keyPressed() {
     }
 }
 
+function drawHistory(history) {
+    history.forEach((element, i, elements) => {
+        const next = elements[i + 1]
+        if (next) {
+            stroke(255, 0, 0);
+            line(element.x, element.y, next.x, next.y);
+        }
+    });
+}
+
 class Rocket {
-    
+
     /**
      * @param {Vector[] | undefined} vectorArray 
      */
@@ -176,6 +189,7 @@ class Rocket {
         this.alive = true;
         this.velocity = new Vector(0, 0);
         this.hitTime = null;
+        this.history = [];
     }
 
     /**
@@ -195,6 +209,7 @@ class Rocket {
      * @param {Goal} goal 
      */
     draw(obstacles, goal) {
+        this.history.push(this.position);
         if (!this.alive) {
             stroke(255, 0, 0);
             ellipse(
@@ -258,6 +273,7 @@ class Rocket {
             })
         );
     }
+
 
     /**
      * @returns boolean
