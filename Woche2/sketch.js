@@ -1,13 +1,15 @@
 // @ts-check
 
-const mutationRate = 0.2;
-const populationSize = 500;
+const mutationRate = 0.25;
+const populationSize = 100;
 const replacementRatio = 0.8;
 
 const maxForce = 1.5;
-const applyFactor = 0.8;
-const flightTime = 100;
+const applyFactor = 0.5;
+const flightTime = 150;
+const nrOfObstacles = 10;
 
+/** @type {Rocket[]}  */
 let rockets = new Array(populationSize);
 let obstacles = [];
 let goal;
@@ -18,16 +20,10 @@ function setup() {
     createCanvas(800, 800);
 
     // generate Rockets
-    /** @type {Rocket[]}  */
     rockets = rockets.fill(null).map(() => new Rocket());
 
     // set obstacles
-    obstacles.push(new Obstacle(100, 100, 100, 20));
-    obstacles.push(new Obstacle(300, 200, 100, 20));
-    obstacles.push(new Obstacle(100, 300, 50, 20));
-    obstacles.push(new Obstacle(470, 200, 200, 20));
-    obstacles.push(new Obstacle(300, 400, 100, 20));
-    obstacles.push(new Obstacle(600, 500, 100, 20));
+    obstacles = makeObstacles();
 
     // create goal
     goal = new Goal();
@@ -67,6 +63,7 @@ function draw() {
 
 /**
  * @param {Rocket[]} rockets 
+ * @returns Rocket[]
  */
 function makeNewGeneration(rockets) {
     // sort rockets by fitness
@@ -96,6 +93,7 @@ function makeNewGeneration(rockets) {
 
 /**
  * @param {Rocket[]} rockets 
+ * @returns Rocket[] 
  */
 function pick(rockets) {
     let fitnessSum = rockets.reduce((sum, current) => sum + current.calculateFitness(), 0);
@@ -113,6 +111,7 @@ function pick(rockets) {
 
 /**
  * @param {Rocket[]} nextGen 
+ * @returns Rocket[] 
  */
 function mutate(nextGen) {
     nextGen.forEach(rocket => {
@@ -131,6 +130,9 @@ function mutate(nextGen) {
     return nextGen;
 }
 
+/**
+ * @returns number
+ */
 function randomNumber() {
     return Math.random() * maxForce * 2 - maxForce;
 }
@@ -140,7 +142,26 @@ function mouseDragged() {
     goal.position.y = mouseY;
 }
 
+
+function makeObstacles() {
+    const obst = [];
+    for (let i = 0; i < nrOfObstacles; i++) {
+        obst.push(new Obstacle(Math.random() * width, Math.random() * height, Math.random() * 100 + 50,  Math.random() * 20 + 20));
+    }
+    return obst;
+}
+
+function keyPressed() {
+    if (keyCode === LEFT_ARROW) {
+        obstacles = makeObstacles();
+    }
+}
+
 class Rocket {
+    
+    /**
+     * @param {Vector[] | undefined} vectorArray 
+     */
     constructor(vectorArray) {
         if (vectorArray) {
             this.vectorArray = vectorArray;
@@ -148,15 +169,18 @@ class Rocket {
             this.vectorArray = this.generateDirectionsArray(flightTime);
         }
 
+        // init values
         this.position = { x: width / 2, y: height * 0.9 };
-
         this.size = 5;
         this.bestDistance = 10000;
         this.alive = true;
-        this.velocity = new Vector(0, 1);
+        this.velocity = new Vector(0, 0);
         this.hitTime = null;
     }
 
+    /**
+     * @param {number} time 
+     */
     fly(time) {
         const currentVector = this.vectorArray[time];
         this.velocity = this.velocity.addToPosition(currentVector);
@@ -166,6 +190,10 @@ class Rocket {
         };
     }
 
+    /**
+     * @param {Obstacle[]} obstacles 
+     * @param {Goal} goal 
+     */
     draw(obstacles, goal) {
         if (!this.alive) {
             stroke(255, 0, 0);
@@ -199,6 +227,10 @@ class Rocket {
         ellipse(this.position.x, this.position.y, this.size, this.size);
     }
 
+    /**
+     * @param {Obstacle[]} obstacles 
+     * @returns boolean
+     */
     detectCrashes(obstacles) {
         return (
             this.isOutOfScreen() ||
@@ -227,6 +259,9 @@ class Rocket {
         );
     }
 
+    /**
+     * @returns boolean
+     */
     isOutOfScreen() {
         return (
             this.position.x < 0 ||
@@ -236,6 +271,9 @@ class Rocket {
         );
     }
 
+    /**
+     * @returns number
+     */
     calculateFitness() {
         if (this.bestDistance === 0) {
             return 1 - this.hitTime / (flightTime * 2);
@@ -243,18 +281,30 @@ class Rocket {
         return 1 / this.bestDistance;
     }
 
+    /**
+     * @param {Goal} goal 
+     * @returns number
+     */
     distanceToGoal(goal) {
         let x = this.position.x - goal.position.x;
         let y = this.position.y - goal.position.y;
         return Math.sqrt(x * x + y * y);
     }
 
+    /**
+     * @param {number} length 
+     * @returns Vector[]
+     */
     generateDirectionsArray(length) {
         return new Array(length)
             .fill(null)
             .map(() => new Vector(randomNumber(), randomNumber()));
     }
 
+    /**
+     * @param {Rocket} partner 
+     * @returns Rocket
+     */
     crossWith(partner) {
         const splitPoint = Math.random() * this.vectorArray.length;
         const myDNA = this.vectorArray.slice(0, splitPoint);
@@ -262,17 +312,28 @@ class Rocket {
         return new Rocket(myDNA.concat(partnerDNA));
     }
 
+    /**
+     * @returns Rocket
+     */
     revive() {
         return new Rocket(this.vectorArray);
     }
 }
 
 class Vector {
+
+    /**
+     * @param {number} x 
+     * @param {number} y 
+     */
     constructor(x, y) {
         this.x = x;
         this.y = y;
     }
 
+    /**
+     * @param {Vector} position 
+     */
     addToPosition(position) {
         return new Vector(
             this.x + position.x * applyFactor,
@@ -282,6 +343,12 @@ class Vector {
 }
 
 class Obstacle {
+    /**
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} w 
+     * @param {number} h 
+     */
     constructor(x, y, w, h) {
         this.x = x;
         this.y = y;
