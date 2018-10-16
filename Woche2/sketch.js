@@ -16,13 +16,20 @@ let generationCounter = 0;
 
 function setup() {
     createCanvas(800, 800);
+
+    // generate Rockets
+    /** @type {Rocket[]}  */
     rockets = rockets.fill(null).map(() => new Rocket());
+
+    // set obstacles
     obstacles.push(new Obstacle(100, 100, 100, 20));
     obstacles.push(new Obstacle(300, 200, 100, 20));
     obstacles.push(new Obstacle(100, 300, 50, 20));
     obstacles.push(new Obstacle(470, 200, 200, 20));
     obstacles.push(new Obstacle(300, 400, 100, 20));
     obstacles.push(new Obstacle(600, 500, 100, 20));
+
+    // create goal
     goal = new Goal();
 }
 
@@ -39,6 +46,8 @@ function draw() {
 
     //generate new population if time is over or all rockets are crashed
     if (time >= flightTime - 1 || rocketsAlive === 0) {
+
+        // next Generation
         rockets = makeNewGeneration(rockets);
         generationCounter++;
         time = 0;
@@ -46,6 +55,7 @@ function draw() {
         time++;
     }
 
+    // draw text
     fill(0, 102, 153);
     stroke(0);
     textSize(20);
@@ -54,14 +64,22 @@ function draw() {
     text(`Time: ${time}`, 30, height - 30);
 }
 
-function makeNewGeneration(rockets) {
-    rockets = rockets.sort(
-        (r1, r2) => r2.calculateFitness() - r1.calculateFitness()
-    );
 
+/**
+ * @param {Rocket[]} rockets 
+ */
+function makeNewGeneration(rockets) {
+    // sort rockets by fitness
+    rockets = rockets.sort((r1, r2) => r2.calculateFitness() - r1.calculateFitness());
+
+    console.log(rockets[0].calculateFitness());
+
+    // pick rockets in mating pool
     let nextGen = new Array(Math.floor(populationSize * replacementRatio))
         .fill(null)
         .map(() => pick(rockets));
+
+    // cross rockets in mating pool
     nextGen = nextGen.map((rocket, idx, allRockets) => {
         if (idx % 2 === 0) {
             return rocket.crossWith(allRockets[idx + 1]);
@@ -69,18 +87,21 @@ function makeNewGeneration(rockets) {
             return rocket.crossWith(allRockets[idx - 1]);
         }
     });
+
+    // mutate next generation and add top 20% of last gen
     return mutate(nextGen).concat(
         rockets.slice(0, populationSize - nextGen.length).map(r => r.revive())
     );
 }
 
+/**
+ * @param {Rocket[]} rockets 
+ */
 function pick(rockets) {
-    let fitnessSum = rockets.reduce(
-        (sum, current) => sum + current.calculateFitness(),
-        0
-    );
+    let fitnessSum = rockets.reduce((sum, current) => sum + current.calculateFitness(), 0);
     let rand = Math.random();
     let sum = 0;
+
     for (let idx = 0; idx < rockets.length; idx++) {
         const rocket = rockets[idx];
         sum += rocket.calculateFitness() / fitnessSum;
@@ -90,6 +111,9 @@ function pick(rockets) {
     }
 }
 
+/**
+ * @param {Rocket[]} nextGen 
+ */
 function mutate(nextGen) {
     nextGen.forEach(rocket => {
         let rand = Math.random();
@@ -124,10 +148,7 @@ class Rocket {
             this.vectorArray = this.generateDirectionsArray(flightTime);
         }
 
-        this.position = {
-            x: width / 2,
-            y: height * 0.9,
-        };
+        this.position = { x: width / 2, y: height * 0.9 };
 
         this.size = 5;
         this.bestDistance = 10000;
@@ -276,13 +297,13 @@ class Obstacle {
 }
 
 class Goal {
-	constructor() {
-		this.position = {
-			x: 350,
-			y: 100
-		};
-		this.radius = 35;
-	}
+    constructor() {
+        this.position = {
+            x: 350,
+            y: 100
+        };
+        this.radius = 35;
+    }
 
     draw() {
         stroke(255);
