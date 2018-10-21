@@ -1,11 +1,11 @@
 // @ts-check
 
-const mutationRate = 0.25;
+const mutationRate = 0.17;
 const populationSize = 100;
 const replacementRatio = 0.8;
 
-const maxForce = 1.5;
-const applyFactor = 0.5;
+const maxForce = 1.8;
+const applyFactor = 0.3;
 const flightTime = 150;
 const nrOfObstacles = 10;
 
@@ -16,6 +16,7 @@ let goal;
 let time = 0;
 let generationCounter = 0;
 let bestHistory = [];
+let reachingGoal = 0;
 
 function setup() {
     createCanvas(800, 800);
@@ -43,6 +44,8 @@ function draw() {
 
     //generate new population if time is over or all rockets are crashed
     if (time >= flightTime - 1 || rocketsAlive === 0) {
+        // count successful rockets
+        reachingGoal = rockets.filter(r => r.hitTime).length;
 
         // next Generation
         rockets = makeNewGeneration(rockets);
@@ -58,7 +61,8 @@ function draw() {
     fill(0, 102, 153);
     stroke(0);
     textSize(20);
-    text(`Generation: ${generationCounter}`, 30, height - 60);
+    text(`Generation: ${generationCounter}`, 30, height - 90);
+    text(`Erfolgreich: ${reachingGoal}/${populationSize}`, 30, height - 60);
     textSize(16);
     text(`Time: ${time}`, 30, height - 30);
 }
@@ -224,7 +228,7 @@ class Rocket {
         this.fly(time);
 
         if (this.detectCrashes(obstacles)) {
-            this.bestDistance *= 20;
+            this.bestDistance *= 500;
             this.alive = false;
         }
         let currentDistance = this.distanceToGoal(goal);
