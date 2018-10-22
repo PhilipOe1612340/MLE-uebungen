@@ -8,9 +8,9 @@ import java.util.ArrayList;
  * Created by minority on 02.11.16.
  */
 public class VM {
-	final int maxOperationPerVMSimulation = 5;
+	final int maxOperationPerVMSimulation = 1000;
 	final int minSizeOfThePrime = 5;
-	
+
     int MAX = 1000;
     final byte LOAD = 0;
     final byte PUSH = 1;
@@ -39,16 +39,23 @@ public class VM {
     }
 
 
-    public VM() {
+    public VM(int[] mem) {
         primeNumbers = new ArrayList<Float>();
         pc = 0;
         sp = 0;
         reg = 0;
+        setMemAndResizeMAX(mem);
+    }
+
+
+    public int run(){
+        simulate();
+        return primeNumbers.size();
     }
 
     // we add every pushed prime number to primeNumbersList for later fitness calculation
     void push(int x) {
-        // avoid nullpointer - ignore all other push statements
+        // avoid null pointer - ignore all other push statements
         if (sp >= 0 && sp < MAX) {
             stack[sp++] = x;
             addIfPrimeToPrimeNumbers(x);
@@ -66,7 +73,7 @@ public class VM {
         int pop = 0;
         int counter = 0;
         do {
-            //System.out.println("VM: sp= " + sp + " pc= " + pc);
+            System.out.println("VM: sp= " + sp + " pc= " + pc);
             counter++;
             try {
                 switch (mem[pc] & 7) {
@@ -91,52 +98,52 @@ public class VM {
                     }
                     case MUL: {
                         pop = pop();
-                        //System.out.print("MUL " + reg + "*" + pop + "=");
+                        System.out.print("MUL " + reg + "*" + pop + "=");
                         reg = reg * pop;
                         push(reg);
-                        //System.out.println(reg);
+                        System.out.println(reg);
                         pc++;
                         break;
                     }
                     case DIV: {
                         pop = pop();
-                        //System.out.print("DIV " + reg + "/" + pop + "=");
+                        System.out.print("DIV " + reg + "/" + pop + "=");
                         if (pop != 0) {
                             reg = reg / pop;
                         }
-                        //System.out.println(reg);
+                        System.out.println(reg);
                         push(reg);
                         pc++;
                         break;
                     }
                     case ADD: {
                         pop = pop();
-                        //System.out.print("ADD " + reg + "+" + pop + "=");
+                        System.out.print("ADD " + reg + "+" + pop + "=");
                         reg = reg + pop;
-                        //System.out.println(reg);
+                        System.out.println(reg);
                         push(reg);
                         pc++;
                         break;
                     }
                     case SUB: {
                         pop = pop();
-                        //System.out.print("SUB " + reg + "-" + pop + "=");
+                        System.out.print("SUB " + reg + "-" + pop + "=");
                         reg = reg - pop;
-                        //System.out.println(reg);
+                        System.out.println(reg);
                         push(reg);
                         pc++;
                         break;
                     }
                     case JIH: {
-                        //System.out.println("JIH");
+                        System.out.println("JIH");
                         if (reg > 0) {
                             // TODO: infinite JIH if pop() = 0
                             pop = pop();
                             if (pop != 0 && ((pc + pop) > 0)) {
-                                //System.out.println("pc= " + pc + " pop= " + pop + " MAX= " + MAX );
+                                System.out.println("pc= " + pc + " pop= " + pop + " MAX= " + MAX );
                                 // TODO: ArrayIndexOutOfBoundException if reg + pop() = negative
                                 pc = ((pc + pop) % MAX);
-                                //System.out.println("new pc : " + pc);
+                                System.out.println("new pc : " + pc);
                             }
                             pc++;
 
@@ -156,27 +163,14 @@ public class VM {
 
     // TODO: stack will be overwritten and is useless
     public void printStack() {
-        //System.out.println("Stack: ");
+        System.out.println("Stack: ");
         for (int elem : stack) {
             if (elem != 0) {
-                //System.out.println(elem);
+                System.out.println(elem);
             }
         }
     }
 
-    // TODO: there are not enough prime numbers on the stack
-    // therefore we check after each push operation if prime and add this number to primeNumbers
-//    public int countPrimOnStack() {
-//        int counter = 0;
-//        for (int elem : stack) {
-//            if (isPrime(elem)) {
-//                if(addToPrimeNumbers(elem)){
-//                    counter++;
-//                }
-//            }
-//        }
-//        return counter;
-//    }
 
     // If the given elem is prime and not in primeNumbers add it
     private void addIfPrimeToPrimeNumbers(float elem) {
@@ -187,13 +181,13 @@ public class VM {
             // check if elem is prime
             if (isPrime(elemAbs)) {
                 // add only new prime numbers
-                if (!primeNumbers.contains(elemAbs)) {
-                    // new prime number --> add
-                    primeNumbers.add(elemAbs);
-                } else {
-                    // prime is known in primeNumbers
-                    // nothing to do
-                }
+                primeNumbers.add(elemAbs);
+                // if (!primeNumbers.contains(elemAbs)) {
+                //     // new prime number --> add
+                // } else {
+                //     // prime is known in primeNumbers
+                //     // nothing to do
+                // }
             }
         }
     }
