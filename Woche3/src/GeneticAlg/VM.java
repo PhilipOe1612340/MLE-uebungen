@@ -2,14 +2,14 @@ package GeneticAlg;
 
 import java.util.ArrayList;
 
-
-
 /**
  * Created by minority on 02.11.16.
  */
 public class VM {
-	final int maxOperationPerVMSimulation = 1000;
-	final int minSizeOfThePrime = 5;
+    final boolean debug = false;
+
+    final int maxOperationPerVMSimulation = 1000;
+    final int minSizeOfThePrime = 5;
 
     int MAX = 1000;
     final byte LOAD = 0;
@@ -38,7 +38,6 @@ public class VM {
         return primeNumbers;
     }
 
-
     public VM(int[] mem) {
         primeNumbers = new ArrayList<Float>();
         pc = 0;
@@ -47,13 +46,17 @@ public class VM {
         setMemAndResizeMAX(mem);
     }
 
-
-    public int run(){
-        simulate();
+    public int run() {
+        // if sumation has crashed return -1
+        if (simulate() < 0) {
+            return -1;
+        }
+        // otherwise return number of primes
         return primeNumbers.size();
     }
 
-    // we add every pushed prime number to primeNumbersList for later fitness calculation
+    // we add every pushed prime number to primeNumbersList for later fitness
+    // calculation
     void push(int x) {
         // avoid null pointer - ignore all other push statements
         if (sp >= 0 && sp < MAX) {
@@ -69,7 +72,7 @@ public class VM {
         return stack[sp];
     }
 
-    public void simulate() {
+    public int simulate() {
         int pop = 0;
         int counter = 0;
         do {
@@ -77,89 +80,102 @@ public class VM {
             counter++;
             try {
                 switch (mem[pc] & 7) {
-                    case LOAD: {
-                        reg = mem[pc] >> 3;
-                        //System.out.println("LOAD " + reg);
-                        pc++;
-                        break;
-                    }
-                    case PUSH: {
-                        //System.out.println("PUSH " + reg + " to stack[" + sp + "]");
-                        push(reg);
-                        pc++;
-                        break;
-                    }
-                    case POP: {
-                        //System.out.print("POP ");
-                        reg = pop();
-                        //System.out.println(reg + " from stack[" + sp + "]");
-                        pc++;
-                        break;
-                    }
-                    case MUL: {
-                        pop = pop();
+                case LOAD: {
+                    reg = mem[pc] >> 3;
+                    if (debug)
+                        System.out.println("LOAD " + reg);
+                    pc++;
+                    break;
+                }
+                case PUSH: {
+                    if (debug)
+                        System.out.println("PUSH " + reg + " to stack[" + sp + "]");
+                    push(reg);
+                    pc++;
+                    break;
+                }
+                case POP: {
+                    if (debug)
+                        System.out.print("POP ");
+                    reg = pop();
+                    if (debug)
+                        System.out.println(reg + " from stack[" + sp + "]");
+                    pc++;
+                    break;
+                }
+                case MUL: {
+                    pop = pop();
+                    if (debug)
                         System.out.print("MUL " + reg + "*" + pop + "=");
-                        reg = reg * pop;
-                        push(reg);
+                    reg = reg * pop;
+                    push(reg);
+                    if (debug)
                         System.out.println(reg);
-                        pc++;
-                        break;
-                    }
-                    case DIV: {
-                        pop = pop();
+                    pc++;
+                    break;
+                }
+                case DIV: {
+                    pop = pop();
+                    if (debug)
                         System.out.print("DIV " + reg + "/" + pop + "=");
-                        if (pop != 0) {
-                            reg = reg / pop;
-                        }
-                        System.out.println(reg);
-                        push(reg);
-                        pc++;
-                        break;
+                    if (pop != 0) {
+                        reg = reg / pop;
                     }
-                    case ADD: {
-                        pop = pop();
+                    if (debug)
+                        System.out.println(reg);
+                    push(reg);
+                    pc++;
+                    break;
+                }
+                case ADD: {
+                    pop = pop();
+                    if (debug)
                         System.out.print("ADD " + reg + "+" + pop + "=");
-                        reg = reg + pop;
+                    reg = reg + pop;
+                    if (debug)
                         System.out.println(reg);
-                        push(reg);
-                        pc++;
-                        break;
-                    }
-                    case SUB: {
-                        pop = pop();
+                    push(reg);
+                    pc++;
+                    break;
+                }
+                case SUB: {
+                    pop = pop();
+                    if (debug)
                         System.out.print("SUB " + reg + "-" + pop + "=");
-                        reg = reg - pop;
+                    reg = reg - pop;
+                    if (debug)
                         System.out.println(reg);
-                        push(reg);
-                        pc++;
-                        break;
-                    }
-                    case JIH: {
+                    push(reg);
+                    pc++;
+                    break;
+                }
+                case JIH: {
+                    if (debug)
                         System.out.println("JIH");
-                        if (reg > 0) {
-                            // TODO: infinite JIH if pop() = 0
-                            pop = pop();
-                            if (pop != 0 && ((pc + pop) > 0)) {
-                                System.out.println("pc= " + pc + " pop= " + pop + " MAX= " + MAX );
-                                // TODO: ArrayIndexOutOfBoundException if reg + pop() = negative
-                                pc = ((pc + pop) % MAX);
+                    if (reg > 0) {
+                        // TODO: infinite JIH if pop() = 0
+                        pop = pop();
+                        if (pop != 0 && ((pc + pop) > 0)) {
+                            if (debug)
+                                System.out.println("pc= " + pc + " pop= " + pop + " MAX= " + MAX);
+                            // TODO: ArrayIndexOutOfBoundException if reg + pop() = negative
+                            pc = ((pc + pop) % MAX);
+                            if (debug)
                                 System.out.println("new pc : " + pc);
-                            }
-                            pc++;
-
-                        } else {
-                            pc++;
                         }
-                        break;
                     }
+                    pc++;
+                    break;
+                }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("Something is wrong - check your vm");
+                if (debug)
+                    System.out.println("Something is wrong - check your vm");
+                return -1;
             }
         } while (pc < MAX && pc > 0 && counter < maxOperationPerVMSimulation && sp >= 0);
+        return 0;
     }
-
 
     // TODO: stack will be overwritten and is useless
     public void printStack() {
@@ -171,7 +187,6 @@ public class VM {
         }
     }
 
-
     // If the given elem is prime and not in primeNumbers add it
     private void addIfPrimeToPrimeNumbers(float elem) {
         // avoid negative numbers
@@ -181,21 +196,23 @@ public class VM {
             // check if elem is prime
             if (isPrime(elemAbs)) {
                 // add only new prime numbers
-                primeNumbers.add(elemAbs);
+
                 // if (!primeNumbers.contains(elemAbs)) {
-                //     // new prime number --> add
+                // // new prime number --> add
+                primeNumbers.add(elemAbs);
                 // } else {
-                //     // prime is known in primeNumbers
-                //     // nothing to do
+                // // prime is known in primeNumbers
+                // // nothing to do
                 // }
             }
         }
     }
 
     private boolean isPrime(float elem) {
-        //check if elem is a multiple of 2
-        if (elem % 2 == 0) return false;
-        //if not, then just check the odds
+        // check if elem is a multiple of 2
+        if (elem % 2 == 0)
+            return false;
+        // if not, then just check the odds
         for (int i = 3; i * i <= elem; i += 2) {
             if (elem % i == 0)
                 return false;
@@ -213,14 +230,3 @@ public class VM {
         reg = 0;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
