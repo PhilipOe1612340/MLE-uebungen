@@ -3,14 +3,14 @@ from random import randint, random
 import matplotlib.pyplot as plt
 
 nrOfTowns = 100
-coordinateX = 1000
-coordinateY = 1000
+coordinateX = 100
+coordinateY = 100
 maxIteration = 1000
 threshold = 5
 plotArrayX = []
 plotArrayY = []
 temp = 10
-epsilon = 0.00000001
+epsilon = 0.01
 
 # Returns random coordinates for a number of towns
 def getCoordinates(nr):
