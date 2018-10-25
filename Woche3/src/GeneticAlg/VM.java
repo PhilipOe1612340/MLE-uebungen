@@ -6,12 +6,11 @@ import java.util.ArrayList;
  * Created by minority on 02.11.16.
  */
 public class VM {
-    final boolean debug = false;
+    boolean debug = false;
 
-    final int maxOperationPerVMSimulation = 1000;
+    final int maxOperationPerVMSimulation = 100;
     final int minSizeOfThePrime = 5;
 
-    int MAX = 1000;
     final byte LOAD = 0;
     final byte PUSH = 1;
     final byte POP = 2;
@@ -21,6 +20,19 @@ public class VM {
     final byte SUB = 6;
     final byte JIH = 7;
 
+    int MAX = 1000;
+    int mem[] = new int[MAX];
+    int stack[] = new int[MAX];
+    int pc, sp, reg;
+    ArrayList primeNumbers;
+
+    public VM() {
+        primeNumbers = new ArrayList<Float>();
+        pc = 0;
+        sp = 0;
+        reg = 0;
+    }
+
     // change the vm parameters according to the opcode length
     // set the opcode as vm memory
     public void setMemAndResizeMAX(int[] mem) {
@@ -29,21 +41,8 @@ public class VM {
         this.stack = new int[MAX];
     }
 
-    int mem[] = new int[MAX];
-    int stack[] = new int[MAX];
-    int pc, sp, reg;
-    ArrayList primeNumbers;
-
     public ArrayList getPrimeNumbers() {
         return primeNumbers;
-    }
-
-    public VM(int[] mem) {
-        primeNumbers = new ArrayList<Float>();
-        pc = 0;
-        sp = 0;
-        reg = 0;
-        setMemAndResizeMAX(mem);
     }
 
     public int run() {
@@ -76,7 +75,8 @@ public class VM {
         int pop = 0;
         int counter = 0;
         do {
-            System.out.println("VM: sp= " + sp + " pc= " + pc);
+            // if (debug)
+            //     System.out.println("VM: sp= " + sp + " pc= " + pc);
             counter++;
             try {
                 switch (mem[pc] & 7) {
@@ -196,14 +196,10 @@ public class VM {
             // check if elem is prime
             if (isPrime(elemAbs)) {
                 // add only new prime numbers
-
-                // if (!primeNumbers.contains(elemAbs)) {
-                // // new prime number --> add
-                primeNumbers.add(elemAbs);
-                // } else {
-                // // prime is known in primeNumbers
-                // // nothing to do
-                // }
+                if (!primeNumbers.contains(elemAbs)) {
+                    // new prime number --> add
+                    primeNumbers.add(elemAbs);
+                }
             }
         }
     }
@@ -222,7 +218,7 @@ public class VM {
 
     // call this method after each simulation
     public void reset() {
-        this.mem = new int[MAX];
+        // this.mem = new int[MAX];
         this.stack = new int[MAX];
         this.primeNumbers = new ArrayList<Float>();
         pc = 0;
