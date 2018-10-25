@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 nrOfTowns = 100
 coordinateX = 100
 coordinateY = 100
-maxIteration = 1000
+maxIteration = 100
 threshold = 5
 plotArrayX = []
 plotArrayY = []
-temperature = 10
-epsilon = 0.01
+temperature = 5
+epsilon = 0.001
 
 # Returns random coordinates for a number of towns
 def getCoordinates(nr):
