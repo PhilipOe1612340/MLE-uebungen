@@ -2,7 +2,7 @@ import math
 from random import randint
 import matplotlib.pyplot as plt
 
-nrOfTowns = 1000
+nrOfTowns = 100
 coordinateX = 1000
 coordinateY = 1000
 maxIteration = 1000
