@@ -9,7 +9,7 @@ maxIteration = 1000
 threshold = 5
 plotArrayX = []
 plotArrayY = []
-temp = 10
+temperature = 10
 epsilon = 0.01
 
 # Returns random coordinates for a number of towns
@@ -70,12 +70,15 @@ def getNewTrip(trip):
 
 # searches for the first better trip it finds. If there is none it returns false.
 def climbOneStep(trip, distances, step):
+    global temperature
     for _ in range(maxIteration):
         currentTripDist = tripDistance(trip, distances)
         nextTrip = getNewTrip(trip)
         nextTripDist = tripDistance(nextTrip, distances)
         rndm = random()
-        if rndm < math.exp(((nextTripDist) * (-1) + currentTripDist)/temp - step*epsilon):
+        if rndm < math.exp(((nextTripDist) * (-1) + currentTripDist)/temperature):
+            print("temp: " + str(temperature))
+            temperature -= epsilon
             return nextTrip
         if currentTripDist > nextTripDist and abs(currentTripDist - nextTripDist) > threshold:
             return nextTrip
@@ -103,8 +106,9 @@ print(tripDistance(trip, dist))
 for i in range(maxIteration):
     result = climbOneStep(trip, dist, i)
     if result:
-        print("improved by: " + str(tripDistance(trip, dist) - tripDistance(result, dist))) 
-        print("fitness: -" + str(tripDistance(result, dist)))                                                   
+        if tripDistance(trip, dist) - tripDistance(result, dist) > 0:
+            print("improved by: " + str(tripDistance(trip, dist) - tripDistance(result, dist))) 
+            print("fitness: -" + str(tripDistance(result, dist)))                                                   
         trip = result
         plotArrayX.append(i)
         plotArrayY.append(tripDistance(result, dist))
