@@ -60,3 +60,15 @@ target/
 \.vscode/settings\.json
 
 Woche3/out/
+
+Woche5/\.settings/
+
+Woche5/bin/
+
+Woche5/\.classpath
+
+Woche5/\.project
+
+Woche5/JavaInputOutput\.iml
+
+Woche5/\.idea/
