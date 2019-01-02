@@ -3,9 +3,9 @@ from random import randint
 import matplotlib.pyplot as plt
 
 nrOfTowns = 100
-coordinateX = 1000
-coordinateY = 1000
-maxIteration = 1000
+coordinateX = 100
+coordinateY = 100
+maxIteration = 100
 threshold = 5
 plotArrayX = []
 plotArrayY = []
