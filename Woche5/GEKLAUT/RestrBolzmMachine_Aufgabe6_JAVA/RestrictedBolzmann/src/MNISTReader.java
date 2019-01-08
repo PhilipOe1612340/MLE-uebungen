@@ -9,12 +9,13 @@ public class MNISTReader extends JFrame {
 
 	static final int NEURONS = 28 * 28 + 10;
 	static final int MAX_PATTERNS = 1000;
+	static final String path = "C:/Users/phili/OneDrive/Documents/Github/MLE/Woche5/GEKLAUT/RestrBolzmMachine_Aufgabe6_JAVA/RestrictedBolzmann/";
 	int numLabels;
 	int numImages;
 	int numRows;
 	int numCols;
 
-	double trainLabel[] = new double[MAX_PATTERNS];
+	int trainLabel[] = new int[MAX_PATTERNS];
 	double trainImage[][] = new double[MAX_PATTERNS][28 * 28];
 	double weights[][] = new double[NEURONS][NEURONS];
 	double output[] = new double[NEURONS];
@@ -33,9 +34,9 @@ public class MNISTReader extends JFrame {
 			for (int rowIdx = 0; rowIdx < 28; rowIdx++) {
 				int c = (int) (input[i++]);
 				if (c > 0.0) {
-					g.setColor(Color.blue);
-				} else {
 					g.setColor(Color.black);
+				} else {
+					g.setColor(Color.white);
 				}
 
 				g.fillRect(10 + rowIdx * 10, 10 + colIdx * 10, 8, 8);
@@ -55,9 +56,9 @@ public class MNISTReader extends JFrame {
 			for (int rowIdx = 0; rowIdx < 28; rowIdx++) {
 				int c = (int) (output[i++] + 0.5);
 				if (c > 0.0) {
-					g.setColor(Color.blue);
-				} else {
 					g.setColor(Color.black);
+				} else {
+					g.setColor(Color.white);
 				}
 
 				g.fillRect(300 + 10 + rowIdx * 10, 10 + colIdx * 10, 8, 8);
@@ -66,9 +67,9 @@ public class MNISTReader extends JFrame {
 		for (int t = 0; t < 10; t++) {
 			int c = (int) (output[i++] + 0.5);
 			if (c > 0.0) {
-				g.setColor(Color.blue);
-			} else {
 				g.setColor(Color.black);
+			} else {
+				g.setColor(Color.white);
 			}
 			g.fillRect(300 + 10 + t * 10, 10 + 28 * 10, 8, 8);
 		}
@@ -77,9 +78,9 @@ public class MNISTReader extends JFrame {
 			for (int rowIdx = 0; rowIdx < 28; rowIdx++) {
 				int c = (int) (reconstructed_input[i++] + 0.5);
 				if (c > 0.0) {
-					g.setColor(Color.blue);
-				} else {
 					g.setColor(Color.black);
+				} else {
+					g.setColor(Color.white);
 				}
 
 				g.fillRect(600 + 10 + rowIdx * 10, 10 + colIdx * 10, 8, 8);
@@ -88,9 +89,9 @@ public class MNISTReader extends JFrame {
 		for (int t = 0; t < 10; t++) {
 			int c = (int) (reconstructed_input[i++] + 0.5);
 			if (c > 0.0) {
-				g.setColor(Color.blue);
-			} else {
 				g.setColor(Color.black);
+			} else {
+				g.setColor(Color.white);
 			}
 			g.fillRect(600 + 10 + t * 10, 10 + 28 * 10, 8, 8);
 		}
@@ -103,14 +104,12 @@ public class MNISTReader extends JFrame {
 	 * @throws InterruptedException
 	 */
 	public static void main(String[] args) throws IOException, InterruptedException {
-
 		MNISTReader frame = new MNISTReader();
 
 		frame.readMnistDatabase();
 		frame.setSize(900, 350);
 		System.out.println("Learning step:");
 		frame.trainOrTestNet(true, 10000, frame);
-		;
 
 		System.out.println("Teststep:");
 		frame.trainOrTestNet(false, 1000, frame);
@@ -191,7 +190,7 @@ public class MNISTReader extends JFrame {
 				contrastiveDivergence(input, output, reconstructed_input, weights);
 			}
 
-			if (count % 111 == 0) {
+			if (count % 200 == 0) {
 				System.out.println("Zahl:" + trainLabel[pattern % 100]);
 				System.out.println("Trainingsmuster:" + count + "                 Erkennungsrate:"
 						+ ((float) (correct) / (float) (count)) * 100 + " %");
@@ -200,7 +199,7 @@ public class MNISTReader extends JFrame {
 				frame.setVisible(true);
 				frame.repaint();
 				try {
-					Thread.sleep(20); // 20 milliseconds is one second.
+					Thread.sleep(100); // 20 milliseconds is one second.
 				} catch (InterruptedException ex) {
 					Thread.currentThread().interrupt();
 				}
@@ -232,20 +231,8 @@ public class MNISTReader extends JFrame {
 
 	public void readMnistDatabase() throws IOException {
 		{
-
-			File folder = new File("");
-			File[] listOfFiles = folder.listFiles();
-
-			for (int i = 0; i < listOfFiles.length; i++) {
-				if (listOfFiles[i].isFile()) {
-					System.out.println("File " + listOfFiles[i].getName());
-				} else if (listOfFiles[i].isDirectory()) {
-					System.out.println("Directory " + listOfFiles[i].getName());
-				}
-			}
-
-			DataInputStream labels = new DataInputStream(new FileInputStream("Woche5\GEKLAUT\RestrBolzmMachine_Aufgabe6_JAVA\RestrictedBolzmann\train-labels-idx1-ubyte"));
-			DataInputStream images = new DataInputStream(new FileInputStream("../train-images-idx3-ubyte"));
+			DataInputStream labels = new DataInputStream(new FileInputStream(path + "train-labels-idx1-ubyte"));
+			DataInputStream images = new DataInputStream(new FileInputStream(path + "train-images-idx3-ubyte"));
 			int magicNumber = labels.readInt();
 			if (magicNumber != 2049) {
 				System.err.println("Label file has wrong magic number: " + magicNumber + " (should be 2049)");
