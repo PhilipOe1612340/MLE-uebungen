@@ -190,7 +190,7 @@ public class MNISTReader extends JFrame {
 				contrastiveDivergence(input, output, reconstructed_input, weights);
 			}
 
-			if (count % 200 == 0) {
+			if (count % 211 == 0) {
 				System.out.println("Zahl:" + trainLabel[pattern % 100]);
 				System.out.println("Trainingsmuster:" + count + "                 Erkennungsrate:"
 						+ ((float) (correct) / (float) (count)) * 100 + " %");
