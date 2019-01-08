@@ -6,6 +6,25 @@
     "configurations": [
         {
             "type": "java",
+            "name": "CodeLens (Launch) - MNISTReader",
+            "request": "launch",
+            "mainClass": "MNISTReader",
+            "projectName": "DeepMindNetwork"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - MainFrame",
+            "request": "launch",
+            "mainClass": "aufgabe05.MainFrame"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - MainFrame",
+            "request": "launch",
+            "mainClass": "MainFrame"
+        },
+        {
+            "type": "java",
             "name": "CodeLens (Launch) - GeneticMonster",
             "request": "launch",
             "cwd": "${workspaceFolder}",
