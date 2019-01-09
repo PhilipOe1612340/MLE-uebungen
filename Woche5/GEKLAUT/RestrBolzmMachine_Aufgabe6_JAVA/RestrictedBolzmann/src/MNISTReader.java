@@ -4,10 +4,9 @@ import java.awt.*;
 import javax.swing.*;
 
 public class MNISTReader extends JFrame {
-
 	static int m_z = 12345, m_w = 45678;
-
 	static final int NEURONS = 28 * 28 + 10;
+	static final int INPUTS = 28 * 28;
 	static final int MAX_PATTERNS = 1000;
 	static final String path = "C:/Users/phili/OneDrive/Documents/Github/MLE/Woche5/GEKLAUT/RestrBolzmMachine_Aufgabe6_JAVA/RestrictedBolzmann/";
 	int numLabels;
@@ -29,97 +28,54 @@ public class MNISTReader extends JFrame {
 	}
 
 	public void paint(Graphics g) {
-		int i = 0;
-		for (int colIdx = 0; colIdx < 28; colIdx++) {
-			for (int rowIdx = 0; rowIdx < 28; rowIdx++) {
-				int c = (int) (input[i++]);
-				if (c > 0.0) {
-					g.setColor(Color.black);
-				} else {
-					g.setColor(Color.white);
-				}
-
-				g.fillRect(10 + rowIdx * 10, 10 + colIdx * 10, 8, 8);
-			}
-		}
-		for (int t = 0; t < 10; t++) {
-			int c = (int) (input[i++]);
-			if (c > 0.0) {
-				g.setColor(Color.blue);
-			} else {
-				g.setColor(Color.black);
-			}
-			g.fillRect(10 + t * 10, 10 + 28 * 10, 8, 8);
-		}
-		i = 0;
-		for (int colIdx = 0; colIdx < 28; colIdx++) {
-			for (int rowIdx = 0; rowIdx < 28; rowIdx++) {
-				int c = (int) (output[i++] + 0.5);
-				if (c > 0.0) {
-					g.setColor(Color.black);
-				} else {
-					g.setColor(Color.white);
-				}
-
-				g.fillRect(300 + 10 + rowIdx * 10, 10 + colIdx * 10, 8, 8);
-			}
-		}
-		for (int t = 0; t < 10; t++) {
-			int c = (int) (output[i++] + 0.5);
-			if (c > 0.0) {
-				g.setColor(Color.black);
-			} else {
-				g.setColor(Color.white);
-			}
-			g.fillRect(300 + 10 + t * 10, 10 + 28 * 10, 8, 8);
-		}
-		i = 0;
-		for (int colIdx = 0; colIdx < 28; colIdx++) {
-			for (int rowIdx = 0; rowIdx < 28; rowIdx++) {
-				int c = (int) (reconstructed_input[i++] + 0.5);
-				if (c > 0.0) {
-					g.setColor(Color.black);
-				} else {
-					g.setColor(Color.white);
-				}
-
-				g.fillRect(600 + 10 + rowIdx * 10, 10 + colIdx * 10, 8, 8);
-			}
-		}
-		for (int t = 0; t < 10; t++) {
-			int c = (int) (reconstructed_input[i++] + 0.5);
-			if (c > 0.0) {
-				g.setColor(Color.black);
-			} else {
-				g.setColor(Color.white);
-			}
-			g.fillRect(600 + 10 + t * 10, 10 + 28 * 10, 8, 8);
-		}
-
+		printImage(0, input, g);
+		printImage(300, output, g);
+		printImage(600, reconstructed_input, g);
 	}
 
-	/**
-	 * @param args args[0]: label file; args[1]: data file.
-	 * @throws IOException
-	 * @throws InterruptedException
-	 */
+	public void printImage(int x, double[] image, Graphics g) {
+		final int blockSize = 10;
+		for (int colIdx = 0; colIdx < 28; colIdx++) {
+			for (int rowIdx = 0; rowIdx < 28; rowIdx++) {
+				int c = (int) (image[rowIdx + colIdx * 28] + 0.5);
+				if (c > 0.0) {
+					g.setColor(Color.black);
+				} else {
+					g.setColor(Color.white);
+				}
+				g.fillRect(x + blockSize + rowIdx * blockSize, blockSize + colIdx * blockSize, blockSize, blockSize);
+			}
+		}
+		for (int t = 28 * 28; t < image.length; t++) {
+			if (image[t] > 0.9) {
+				g.setColor(Color.white);
+				g.fillRect(x + 50, 29 * blockSize, 15, 15);
+				g.setColor(Color.black);
+				g.drawString(t - 28 * 28 + "", x + 50, blockSize + 29 * blockSize);
+				return;
+			}
+		}
+	}
+
 	public static void main(String[] args) throws IOException, InterruptedException {
 		MNISTReader frame = new MNISTReader();
 
 		frame.readMnistDatabase();
 		frame.setSize(900, 350);
 		System.out.println("Learning step:");
-		frame.trainOrTestNet(true, 10000, frame);
+		frame.trainOrTestNet(true, 1000, frame);
 
 		System.out.println("Teststep:");
 		frame.trainOrTestNet(false, 1000, frame);
 	}
 
+	/**
+	 * set random weights
+	 */
 	public void init(double weights[][]) {
 		for (int t = 0; t < NEURONS; t++) {
 			for (int neuron = 0; neuron < NEURONS; neuron++) {
 				weights[neuron][t] = randomGen() % 2000 / 1000.0 - 1.0;
-				// System.out.println("weight["+neuron+"]["+t+"]="+weights[neuron][t]);
 			}
 		}
 	}
@@ -155,77 +111,75 @@ public class MNISTReader extends JFrame {
 	void trainOrTestNet(boolean train, int maxCount, MNISTReader frame) {
 		int correct = 0;
 
-		if (train) {
+		if (train)
 			init(weights);
-		}
-		int pattern = 0;
-		for (int count = 1; count < maxCount; count++) {
-			// --- training phase
 
-			for (int t = 0; t < NEURONS - 10; t++) {
-				input[t] = trainImage[pattern % 100][t]; // initialize original pattern
+		int pattern = 0;
+		for (int count = 0; count < maxCount; count++) {
+
+			// set image inputs
+			for (int t = 0; t < INPUTS; t++) {
+				input[t] = trainImage[pattern][t];
 			}
-			for (int t = NEURONS - 10; t < NEURONS; t++) {
+
+			// reset outputs
+			for (int t = INPUTS; t < NEURONS; t++) {
 				input[t] = 0;
 			}
+
+			// set label inputs for training
 			if (train) {
-				// --- use the label also as input!
-				if (trainLabel[pattern % 100] >= 0 && trainLabel[pattern % 100] < 10) {
-					input[NEURONS - 10 + (int) trainLabel[pattern % 100]] = 1.0;
-				}
+				input[INPUTS + (int) trainLabel[pattern]] = 1.0;
 			}
 
-			// --- Contrastive divergence
-			// Activation
-			input[0] = 1; // bias neuron!
-			activateForward(input, weights, output); // positive Phase
-			output[0] = 1; // bias neuron!
+			// Contrastive divergence
+			// TODO: explain
+			activateForward(input, weights, output);
 
-			// drawActivity(300,0,output,red,green,blue);
+			// negative phase reconstruction
+			// TODO: explain
+			activateReconstruction(reconstructed_input, weights, output);
 
-			activateReconstruction(reconstructed_input, weights, output); // negative phase/ reconstruction
-
-			// drawActivity(600,0,reconstructed_input,red,green,blue);
-			if (train) {
+			// adjust weights 
+			if (train)
 				contrastiveDivergence(input, output, reconstructed_input, weights);
-			}
 
-			if (count % 211 == 0) {
-				System.out.println("Zahl:" + trainLabel[pattern % 100]);
-				System.out.println("Trainingsmuster:" + count + "                 Erkennungsrate:"
-						+ ((float) (correct) / (float) (count)) * 100 + " %");
+			// show progress
+			if (count % 211 == 0 && train) {
+				String rate = (float) (correct) / (float) (count) * 100 + "%";
+				System.out.println("Nr: " + count + "   Rate: " + rate);
 
 				frame.validate();
 				frame.setVisible(true);
 				frame.repaint();
+
 				try {
-					Thread.sleep(100); // 20 milliseconds is one second.
+					Thread.sleep(500);
 				} catch (InterruptedException ex) {
 					Thread.currentThread().interrupt();
 				}
-
 			}
 
-			if (!train) {
-				int number = 0;
-				for (int t = NEURONS - 10; t < NEURONS; t++) {
-					if (reconstructed_input[t] > reconstructed_input[NEURONS - 10 + number]) {
-						number = t - (NEURONS - 10);
-					}
+			// search for the larges output
+			int recognizedNumber = 0;
+			for (int t = INPUTS; t < NEURONS; t++) {
+				if (reconstructed_input[t] > reconstructed_input[INPUTS + recognizedNumber]) {
+					recognizedNumber = t - INPUTS;
 				}
-
-				if (frame.trainLabel[pattern % 100] == number) {
-					System.out.println(
-							"Muster: " + frame.trainLabel[pattern % 100] + ", Erkannt: " + number + " KORREKT!!!\n");
-					correct++;
-				} else {
-					System.out.println("Muster: " + frame.trainLabel[pattern % 100] + ", Erkannt: " + number);
-				}
-
 			}
 
-			pattern++;
+			// check if recognized number is correct
+			if (frame.trainLabel[pattern] == recognizedNumber) {
+				correct++;
+			} else {
+				System.out.println("falsch: " + recognizedNumber + " statt " + frame.trainLabel[pattern]);
+			}
+
+			pattern = (pattern + 1) % 100;
 		}
+
+		if (!train)
+			System.out.println("korrekt: " + correct + " von " + maxCount);
 
 	}
 
@@ -248,7 +202,6 @@ public class MNISTReader extends JFrame {
 			numRows = images.readInt();
 			numCols = images.readInt();
 
-			long start = System.currentTimeMillis();
 			int numLabelsRead = 0;
 			int numImagesRead = 0;
 
@@ -257,7 +210,6 @@ public class MNISTReader extends JFrame {
 				byte label = labels.readByte();
 				numLabelsRead++;
 				trainLabel[numImagesRead] = label;
-				double pos = 0, neg = 0;
 				int i = 0;
 				for (int colIdx = 0; colIdx < numCols; colIdx++) {
 					for (int rowIdx = 0; rowIdx < numRows; rowIdx++) {
@@ -271,35 +223,10 @@ public class MNISTReader extends JFrame {
 				}
 
 				numImagesRead++;
-
-				// At this point, 'label' and 'image' agree and you can do
-				// whatever you like with them.
-
-				if (numLabelsRead % 10 == 0) {
-					System.out.print(".");
-				}
-				if ((numLabelsRead % 800) == 0) {
-					System.out.print(" " + numLabelsRead + " / " + numLabels);
-					long end = System.currentTimeMillis();
-					long elapsed = end - start;
-					long minutes = elapsed / (1000 * 60);
-					long seconds = (elapsed / 1000) - (minutes * 60);
-					System.out.println("  " + minutes + " m " + seconds + " s ");
-
-				}
-
 			}
-
-			System.out.println();
-			long end = System.currentTimeMillis();
-			long elapsed = end - start;
-			long minutes = elapsed / (1000 * 60);
-			long seconds = (elapsed / 1000) - (minutes * 60);
-			System.out.println("Read " + numLabelsRead + " samples in " + minutes + " m " + seconds + " s ");
 
 			labels.close();
 			images.close();
-
 		}
 
 	}

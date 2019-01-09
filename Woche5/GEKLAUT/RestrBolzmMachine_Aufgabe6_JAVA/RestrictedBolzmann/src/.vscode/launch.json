@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - MNISTReader",
+            "request": "launch",
+            "mainClass": "MNISTReader"
+        }
+    ]
+}
