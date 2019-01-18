@@ -4,22 +4,23 @@ import java.awt.*;
 import javax.swing.*;
 
 public class MNISTReader extends JFrame {
+	private static final long serialVersionUID = 1L;
 	static int m_z = 12345, m_w = 45678;
-	static final int NEURONS = 28 * 28 + 10;
-	static final int INPUTS = 28 * 28;
-	static final int MAX_PATTERNS = 1000;
-	static final String path = "C:/Users/phili/OneDrive/Documents/Github/MLE/Woche5/GEKLAUT/RestrBolzmMachine_Aufgabe6_JAVA/RestrictedBolzmann/";
+	static int INPUTS = 28 * 28 + 10;
+	static int PIXEL = 28 * 28;
+	static int PATTERNS = 1000;
+	static final String path = "C:/Users/philip/OneDrive/Documents/Github/MLE/Woche5/GEKLAUT/RestrBolzmMachine_Aufgabe6_JAVA/RestrictedBolzmann/";
 	int numLabels;
 	int numImages;
 	int numRows;
 	int numCols;
 
-	int trainLabel[] = new int[MAX_PATTERNS];
-	double trainImage[][] = new double[MAX_PATTERNS][28 * 28];
-	double weights[][] = new double[NEURONS][NEURONS];
-	double output[] = new double[NEURONS];
-	double input[] = new double[NEURONS];
-	double reconstructed_input[] = new double[NEURONS];
+	int trainLabel[];
+	double trainImage[][];
+	double weights[][];
+	double output[];
+	double input[];
+	double reconstructed_input[];
 
 	int randomGen() {
 		m_z = Math.abs(36969 * (m_z & 65535) + (m_z >> 16));
@@ -37,12 +38,8 @@ public class MNISTReader extends JFrame {
 		final int blockSize = 10;
 		for (int colIdx = 0; colIdx < 28; colIdx++) {
 			for (int rowIdx = 0; rowIdx < 28; rowIdx++) {
-				int c = (int) (image[rowIdx + colIdx * 28] + 0.5);
-				if (c > 0.0) {
-					g.setColor(Color.black);
-				} else {
-					g.setColor(Color.white);
-				}
+				int c = (int) (image[rowIdx + colIdx * 28] * 255);
+				g.setColor(new Color(c, c, c));
 				g.fillRect(x + blockSize + rowIdx * blockSize, blockSize + colIdx * blockSize, blockSize, blockSize);
 			}
 		}
@@ -62,8 +59,9 @@ public class MNISTReader extends JFrame {
 
 		frame.readMnistDatabase();
 		frame.setSize(900, 350);
+
 		System.out.println("Learning step:");
-		frame.trainOrTestNet(true, 1000, frame);
+		frame.trainOrTestNet(true, 10000, frame);
 
 		System.out.println("Teststep:");
 		frame.trainOrTestNet(false, 1000, frame);
@@ -73,17 +71,17 @@ public class MNISTReader extends JFrame {
 	 * set random weights
 	 */
 	public void init(double weights[][]) {
-		for (int t = 0; t < NEURONS; t++) {
-			for (int neuron = 0; neuron < NEURONS; neuron++) {
+		for (int t = 0; t < INPUTS; t++) {
+			for (int neuron = 0; neuron < INPUTS; neuron++) {
 				weights[neuron][t] = randomGen() % 2000 / 1000.0 - 1.0;
 			}
 		}
 	}
 
 	public void activateForward(double in[], double w[][], double out[]) {
-		for (int i = 0; i < NEURONS; i++) {
+		for (int i = 0; i < INPUTS; i++) {
 			double summe = 0;
-			for (int j = 0; j < NEURONS; j++) {
+			for (int j = 0; j < INPUTS; j++) {
 				summe += in[j] * w[i][j];
 			}
 			out[i] = 1 / (1 + Math.exp(-summe));
@@ -91,9 +89,9 @@ public class MNISTReader extends JFrame {
 	}
 
 	public void activateReconstruction(double rec[], double w[][], double out[]) {
-		for (int i = 0; i < NEURONS; i++) {
+		for (int i = 0; i < INPUTS; i++) {
 			double summe = 0;
-			for (int j = 0; j < NEURONS; j++) {
+			for (int j = 0; j < INPUTS; j++) {
 				summe += out[j] * w[j][i];
 			}
 			rec[i] = 1 / (1 + Math.exp(-summe));
@@ -101,9 +99,9 @@ public class MNISTReader extends JFrame {
 	}
 
 	public void contrastiveDivergence(double inp[], double out[], double rec[], double w[][]) {
-		for (int i = 0; i < NEURONS; i++) {
-			for (int j = 0; j < NEURONS; j++) {
-				w[i][j] = w[i][j] - 0.5 * (rec[j] - inp[j]) * out[i];
+		for (int i = 0; i < INPUTS; i++) {
+			for (int j = 0; j < INPUTS; j++) {
+				w[i][j] = w[i][j] - 0.001 * (rec[j] - inp[j]) * out[i];
 			}
 		}
 	}
@@ -118,34 +116,32 @@ public class MNISTReader extends JFrame {
 		for (int count = 0; count < maxCount; count++) {
 
 			// set image inputs
-			for (int t = 0; t < INPUTS; t++) {
+			for (int t = 0; t < PIXEL; t++) {
 				input[t] = trainImage[pattern][t];
 			}
 
 			// reset outputs
-			for (int t = INPUTS; t < NEURONS; t++) {
+			for (int t = PIXEL; t < INPUTS; t++) {
 				input[t] = 0;
 			}
 
 			// set label inputs for training
 			if (train) {
-				input[INPUTS + (int) trainLabel[pattern]] = 1.0;
+				input[PIXEL + (int) trainLabel[pattern]] = 1.0;
 			}
 
 			// Contrastive divergence
-			// TODO: explain
 			activateForward(input, weights, output);
 
 			// negative phase reconstruction
-			// TODO: explain
 			activateReconstruction(reconstructed_input, weights, output);
 
-			// adjust weights 
+			// adjust weights
 			if (train)
 				contrastiveDivergence(input, output, reconstructed_input, weights);
 
 			// show progress
-			if (count % 211 == 0 && train) {
+			if (trainLabel[pattern] == 3 && train) {
 				String rate = (float) (correct) / (float) (count) * 100 + "%";
 				System.out.println("Nr: " + count + "   Rate: " + rate);
 
@@ -162,9 +158,9 @@ public class MNISTReader extends JFrame {
 
 			// search for the larges output
 			int recognizedNumber = 0;
-			for (int t = INPUTS; t < NEURONS; t++) {
-				if (reconstructed_input[t] > reconstructed_input[INPUTS + recognizedNumber]) {
-					recognizedNumber = t - INPUTS;
+			for (int t = PIXEL; t < INPUTS; t++) {
+				if (reconstructed_input[t] > reconstructed_input[PIXEL + recognizedNumber]) {
+					recognizedNumber = t - PIXEL;
 				}
 			}
 
@@ -175,7 +171,7 @@ public class MNISTReader extends JFrame {
 				System.out.println("falsch: " + recognizedNumber + " statt " + frame.trainLabel[pattern]);
 			}
 
-			pattern = (pattern + 1) % 100;
+			pattern = (pattern + 1) % PATTERNS;
 		}
 
 		if (!train)
@@ -187,44 +183,41 @@ public class MNISTReader extends JFrame {
 		{
 			DataInputStream labels = new DataInputStream(new FileInputStream(path + "train-labels-idx1-ubyte"));
 			DataInputStream images = new DataInputStream(new FileInputStream(path + "train-images-idx3-ubyte"));
-			int magicNumber = labels.readInt();
-			if (magicNumber != 2049) {
-				System.err.println("Label file has wrong magic number: " + magicNumber + " (should be 2049)");
-				System.exit(0);
-			}
-			magicNumber = images.readInt();
-			if (magicNumber != 2051) {
-				System.err.println("Image file has wrong magic number: " + magicNumber + " (should be 2051)");
-				System.exit(0);
-			}
+
 			numLabels = labels.readInt();
+
 			numImages = images.readInt();
 			numRows = images.readInt();
 			numCols = images.readInt();
 
-			int numLabelsRead = 0;
+			PATTERNS = numImages < numLabels ? numLabels : numLabels;
+			PIXEL = numCols * numCols;
+			INPUTS = PIXEL + 10;
+
+			trainLabel = new int[PATTERNS];
+			trainImage = new double[PATTERNS][28 * 28];
+			weights = new double[INPUTS][INPUTS];
+			output = new double[INPUTS];
+			input = new double[INPUTS];
+			reconstructed_input = new double[INPUTS];
+
+			byte[] byteArray = new byte[PATTERNS];
+			labels.read(byteArray);
+
 			int numImagesRead = 0;
-
-			while (labels.available() > 0 && numLabelsRead < MAX_PATTERNS) { // numLabels
-
-				byte label = labels.readByte();
-				numLabelsRead++;
-				trainLabel[numImagesRead] = label;
-				int i = 0;
+			while (images.available() > 0 && numImagesRead < PATTERNS - 5) {
 				for (int colIdx = 0; colIdx < numCols; colIdx++) {
-					for (int rowIdx = 0; rowIdx < numRows; rowIdx++) {
-						if (images.readUnsignedByte() > 0) {
-							trainImage[numImagesRead][i++] = 1.0;
-						} else {
-							trainImage[numImagesRead][i++] = 0;
-						}
-
+					for (int rowIdx = 0; rowIdx < numCols; rowIdx++) {
+						int value = images.readUnsignedByte();
+						int index = colIdx * numCols + rowIdx;
+						trainImage[numImagesRead][index] = ((double) (value & 0xff)) / 255;
 					}
 				}
-
+				trainLabel[numImagesRead] = byteArray[numImagesRead + 4];
 				numImagesRead++;
 			}
 
+			System.out.println("reading done");
 			labels.close();
 			images.close();
 		}
