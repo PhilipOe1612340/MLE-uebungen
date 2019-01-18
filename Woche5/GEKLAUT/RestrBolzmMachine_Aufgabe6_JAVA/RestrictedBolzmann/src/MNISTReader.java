@@ -101,7 +101,7 @@ public class MNISTReader extends JFrame {
 	public void contrastiveDivergence(double inp[], double out[], double rec[], double w[][]) {
 		for (int i = 0; i < INPUTS; i++) {
 			for (int j = 0; j < INPUTS; j++) {
-				w[i][j] = w[i][j] - 0.001 * (rec[j] - inp[j]) * out[i];
+				w[i][j] = w[i][j] - 0.1 * (rec[j] - inp[j]) * out[i];
 			}
 		}
 	}
@@ -141,19 +141,10 @@ public class MNISTReader extends JFrame {
 				contrastiveDivergence(input, output, reconstructed_input, weights);
 
 			// show progress
-			if (trainLabel[pattern] == 3 && train) {
+
+			if (pattern % 211 == 0 && train) {
 				String rate = (float) (correct) / (float) (count) * 100 + "%";
 				System.out.println("Nr: " + count + "   Rate: " + rate);
-
-				frame.validate();
-				frame.setVisible(true);
-				frame.repaint();
-
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException ex) {
-					Thread.currentThread().interrupt();
-				}
 			}
 
 			// search for the larges output
@@ -169,6 +160,8 @@ public class MNISTReader extends JFrame {
 				correct++;
 			} else {
 				System.out.println("falsch: " + recognizedNumber + " statt " + frame.trainLabel[pattern]);
+				if (train && frame.trainLabel[pattern] == 3)
+					display(frame);
 			}
 
 			pattern = (pattern + 1) % PATTERNS;
@@ -177,6 +170,18 @@ public class MNISTReader extends JFrame {
 		if (!train)
 			System.out.println("korrekt: " + correct + " von " + maxCount);
 
+	}
+
+	public void display(MNISTReader frame) {
+		frame.validate();
+		frame.setVisible(true);
+		frame.repaint();
+
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	public void readMnistDatabase() throws IOException {
