@@ -2,6 +2,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "CodeLens (Launch) - Learner",
+            "request": "launch",
+            "mainClass": "MLE.Learner",
+            "projectName": "DeepMindNetwork"
+        },
+        {
+            "type": "java",
             "name": "CodeLens (Launch) - MNISTReader",
             "request": "launch",
             "mainClass": "MNISTReader",
