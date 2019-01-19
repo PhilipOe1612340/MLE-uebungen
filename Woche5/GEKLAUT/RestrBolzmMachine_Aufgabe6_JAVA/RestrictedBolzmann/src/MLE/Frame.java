@@ -13,12 +13,13 @@ public class Frame extends JFrame {
 	int expected;
 	int actual;
 	double[] bias;
+	double[] output;
 
 	boolean fastMode = false;
 
 	Frame() {
 		super("Learner");
-		setSize(900, 350);
+		setSize(1200, 400);
 		JButton fast = new JButton("fastMode");
 		add(fast, BorderLayout.PAGE_END);
 		fast.addActionListener(new ActionListener() {
@@ -30,32 +31,37 @@ public class Frame extends JFrame {
 	}
 
 	public void paint(Graphics g) {
-		printImage(0, input, expected, g);
-		printImage(300, reconstructed_input, actual, g);
-		printImage(600, bias, 0, g);
+		printImage(0, input, expected, g, true);
+		printImage(300, reconstructed_input, actual, g, true);
+		printImage(600, output, 0, g, false);
+		printImage(900, bias, 0, g, false);
 	}
 
-	public void printImage(int x, double[] image, int result, Graphics g) {
+	public void printImage(int x, double[] image, int result, Graphics g, boolean mark) {
 		final int blockSize = 10;
 		for (int colIdx = 0; colIdx < 28; colIdx++) {
 			for (int rowIdx = 0; rowIdx < 28; rowIdx++) {
-				int c = (int) (image[rowIdx + colIdx * 28] * 255);
+				int index = rowIdx + colIdx * 28;
+				int c = (int) (image[index] * 255);
 				if (c > 255)
 					c = 255;
 				if (c < 0)
 					c = 0;
-				g.setColor(new Color(c, c, c));
-				g.fillRect(x + blockSize + rowIdx * blockSize, blockSize + colIdx * blockSize, blockSize, blockSize);
+
+				g.setColor(index == 410 && mark ? new Color(255, 0, 0) : new Color(c, c, c));
+				g.fillRect(x + blockSize + rowIdx * blockSize, 50 + blockSize + colIdx * blockSize, blockSize,
+						blockSize);
 			}
 		}
 		g.setColor(Color.white);
-		g.fillRect(x + 50, 29 * blockSize, 15, 15);
+		g.fillRect(x + 50, 50 + 29 * blockSize, 15, 15);
 		g.setColor(Color.black);
-		g.drawString(result + "", x + 50, blockSize + 29 * blockSize);
+		g.drawString(result + "", x + 50, 50 + blockSize + 29 * blockSize);
 		return;
 	}
 
-	public void display(double[] input, int expected, double[] reconstructed_input, int actual, double[] bias) {
+	public void display(double[] input, int expected, double[] reconstructed_input, int actual, double[][] weights,
+			double[] output) {
 		if (fastMode)
 			return;
 
@@ -63,7 +69,18 @@ public class Frame extends JFrame {
 		this.expected = expected;
 		this.reconstructed_input = reconstructed_input;
 		this.actual = actual;
-		this.bias = bias;
+		this.bias = new double[weights.length];
+		this.output = output;
+
+		for (int i = 0; i < weights.length; i++) {
+			final int f = 400;
+			if (i < f) {
+				this.bias[i] = weights[f][i];
+			} else {
+				this.bias[i] = weights[i][f];
+			}
+			this.bias[i] = this.bias[i] * 4 + 0.5;
+		}
 
 		validate();
 		setVisible(true);

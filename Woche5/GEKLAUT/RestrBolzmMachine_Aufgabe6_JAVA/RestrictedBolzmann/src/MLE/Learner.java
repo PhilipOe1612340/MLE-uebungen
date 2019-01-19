@@ -3,7 +3,7 @@ package MLE;
 import java.io.*;
 
 public class Learner {
-    static final double LEARN = 0.005;
+    static final double LEARN = 0.01;
 
     static final String path = "C:/Users/philip/OneDrive/Documents/Github/MLE/Woche5/GEKLAUT/RestrBolzmMachine_Aufgabe6_JAVA/RestrictedBolzmann/";
     static final double MIN = Double.NEGATIVE_INFINITY;
@@ -109,12 +109,13 @@ public class Learner {
     }
 
     public static void reset(double[] input, double[] image) {
-        for (int t = 0; t < PIXEL; t++) {
-            input[t] = image[t];
+        input[0] = 1;
+        for (int t = 1; t < PIXEL + 1; t++) {
+            input[t] = image[t - 1];
         }
 
         // reset outputs
-        for (int t = PIXEL; t < INPUTS; t++) {
+        for (int t = PIXEL + 1; t < INPUTS; t++) {
             input[t] = 0;
         }
     }
@@ -131,35 +132,29 @@ public class Learner {
         int pattern = TEST_OFFSET;
         for (int count = 0; count < maxCount; count++) {
 
+            // setup
             reset(input, trainImage[pattern]);
-
-            // set label inputs for training
             input[PIXEL + (int) trainLabel[pattern]] = 1.0;
 
-            // Contrastive divergence
+            // learn
             output = activate(input);
-
-            // negative phase reconstruction
             reconstructed_input = activate(output);
-
-            // adjust weights
             contrastiveDivergence(input, output, reconstructed_input);
+
+            // check result
+            int recognizedNumber = getResult(output);
+
+            if (trainLabel[pattern] == recognizedNumber) {
+                correct++;
+            } else {
+                // if (trainLabel[pattern] == 3)
+                frame.display(input, trainLabel[pattern], reconstructed_input, recognizedNumber, weights, output);
+            }
 
             // show progress
             if (pattern % 10 == 0) {
                 String rate = (int) ((float) correct / (float) (count + 1) * 100) + "% ";
                 System.out.print("\r " + correct + "/" + count + "   Rate: " + rate);
-            }
-
-            // search for the larges output
-            int recognizedNumber = getResult(output);
-
-            // check if recognized number is correct
-            if (trainLabel[pattern] == recognizedNumber) {
-                correct++;
-            } else {
-                if (trainLabel[pattern] == 3)
-                    frame.display(input, trainLabel[pattern], reconstructed_input, recognizedNumber, output);
             }
 
             pattern = ((pattern + 1 - TEST_OFFSET) % (PATTERNS - TEST_OFFSET)) + TEST_OFFSET;
@@ -174,16 +169,9 @@ public class Learner {
         double[] input = new double[INPUTS];
 
         for (int pattern = minCount; pattern < maxCount; pattern++) {
-
-            // set image inputs
             reset(input, trainImage[pattern]);
-
             output = activate(input);
-
-            // search for the largest output
             int recognizedNumber = getResult(output);
-
-            // check if recognized number is correct
             if (trainLabel[pattern] == recognizedNumber) {
                 correct++;
             }
@@ -201,7 +189,7 @@ public class Learner {
 
         PATTERNS = numImages;
         PIXEL = numCols * numCols;
-        INPUTS = PIXEL + 10;
+        INPUTS = PIXEL + 11;
         TEST_OFFSET = PATTERNS / 10;
 
         trainLabel = new int[PATTERNS];
