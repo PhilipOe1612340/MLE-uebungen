@@ -3,19 +3,21 @@ package MLE;
 import java.io.*;
 
 public class Learner {
-    static final double LEARN = 0.01;
+    static final double LEARN = 0.005;
 
     static final String path = "C:/Users/philip/OneDrive/Documents/Github/MLE/Woche5/GEKLAUT/RestrBolzmMachine_Aufgabe6_JAVA/RestrictedBolzmann/";
+    static final double MIN = Double.NEGATIVE_INFINITY;
 
     static int INPUTS;
     static int PIXEL;
     static int PATTERNS;
-    static int TEST_OFFSET = 200;
+    static int TEST_OFFSET;
 
     static int trainLabel[];
 
     static double trainImage[][];
     static double weights[][];
+    static double bias[];
 
     public static void main(String[] args) throws IOException, InterruptedException {
         Frame frame = new Frame();
@@ -31,34 +33,32 @@ public class Learner {
         test(0, TEST_OFFSET, frame);
 
         System.out.println(amend + "test with learned data" + amend);
-        test(TEST_OFFSET, TEST_OFFSET + 200, frame);
+        test(TEST_OFFSET, TEST_OFFSET * 2, frame);
 
         System.exit(0);
     }
 
     public static void init(double weights[][]) {
-        for (int t = 0; t < INPUTS; t++) {
-            for (int neuron = 0; neuron < INPUTS; neuron++) {
-                weights[neuron][t] = Math.random() * 2 - 1;
+        for (int i = 0; i < INPUTS; i++) {
+            for (int j = 0; j < INPUTS; j++) {
+                setWeight(i, j, Math.random() * 0.6 - 0.3);
             }
         }
     }
 
-    public static double[] activate(double in[], double w[][], boolean forward) {
+    public static double[] activate(double in[]) {
         double out[] = new double[in.length];
 
         for (int i = 0; i < INPUTS; i++) {
             double sum = 0;
             for (int j = 0; j < INPUTS; j++) {
-                int startNeuron = forward ? i : j;
-                int targetNeuron = forward ? j : i;
-
                 double inputValue = in[j];
-                double weight = w[startNeuron][targetNeuron];
+                double weight = getWeight(i, j);
 
                 // add all weighted connections together
                 sum += inputValue * weight;
             }
+            // sum += bias[i];
             out[i] = sigmoid(-sum);
         }
         return out;
@@ -66,6 +66,26 @@ public class Learner {
 
     public static double sigmoid(double val) {
         return 1 / (1 + Math.exp(val));
+    }
+
+    public static double getWeight(int i, int j) {
+        if (i == j)
+            return 1;
+        int from = i > j ? i : j;
+        int to = i > j ? j : i;
+        return weights[from][to];
+    }
+
+    public static void adjustWeight(int i, int j, double val) {
+        int from = i > j ? i : j;
+        int to = i > j ? j : i;
+        weights[from][to] -= val;
+    }
+
+    public static void setWeight(int i, int j, double val) {
+        int from = i > j ? i : j;
+        int to = i > j ? j : i;
+        weights[from][to] = val;
     }
 
     public static int getResult(double[] outputs) {
@@ -78,11 +98,24 @@ public class Learner {
         return recognizedNumber;
     }
 
-    public static void contrastiveDivergence(double inp[], double out[], double rec[], double w[][]) {
+    public static void contrastiveDivergence(double inp[], double out[], double rec[]) {
         for (int i = 0; i < INPUTS; i++) {
+            double b = 0;
             for (int j = 0; j < INPUTS; j++) {
-                w[i][j] = w[i][j] - LEARN * (rec[j] - inp[j]) * out[i];
+                adjustWeight(i, j, LEARN * (rec[j] - inp[j]) * out[i]);
             }
+            bias[i] = bias[i] + 0.1 * (b / INPUTS);
+        }
+    }
+
+    public static void reset(double[] input, double[] image) {
+        for (int t = 0; t < PIXEL; t++) {
+            input[t] = image[t];
+        }
+
+        // reset outputs
+        for (int t = PIXEL; t < INPUTS; t++) {
+            input[t] = 0;
         }
     }
 
@@ -98,32 +131,24 @@ public class Learner {
         int pattern = TEST_OFFSET;
         for (int count = 0; count < maxCount; count++) {
 
-            // set image inputs
-            for (int t = 0; t < PIXEL; t++) {
-                input[t] = trainImage[pattern][t];
-            }
-
-            // reset outputs
-            for (int t = PIXEL; t < INPUTS; t++) {
-                input[t] = 0;
-            }
+            reset(input, trainImage[pattern]);
 
             // set label inputs for training
             input[PIXEL + (int) trainLabel[pattern]] = 1.0;
 
             // Contrastive divergence
-            output = activate(input, weights, true);
+            output = activate(input);
 
             // negative phase reconstruction
-            reconstructed_input = activate(output, weights, false);
+            reconstructed_input = activate(output);
 
             // adjust weights
-            contrastiveDivergence(input, output, reconstructed_input, weights);
+            contrastiveDivergence(input, output, reconstructed_input);
 
             // show progress
             if (pattern % 10 == 0) {
-                String rate = (int) ((float) correct / (count + 1) * 100) + "% ";
-                System.out.print("\r Nr: " + count + "   Rate: " + rate);
+                String rate = (int) ((float) correct / (float) (count + 1) * 100) + "% ";
+                System.out.print("\r " + correct + "/" + count + "   Rate: " + rate);
             }
 
             // search for the larges output
@@ -134,7 +159,7 @@ public class Learner {
                 correct++;
             } else {
                 if (trainLabel[pattern] == 3)
-                    frame.display(input, trainLabel[pattern], reconstructed_input, recognizedNumber);
+                    frame.display(input, trainLabel[pattern], reconstructed_input, recognizedNumber, output);
             }
 
             pattern = ((pattern + 1 - TEST_OFFSET) % (PATTERNS - TEST_OFFSET)) + TEST_OFFSET;
@@ -151,16 +176,9 @@ public class Learner {
         for (int pattern = minCount; pattern < maxCount; pattern++) {
 
             // set image inputs
-            for (int t = 0; t < PIXEL; t++) {
-                input[t] = trainImage[pattern][t];
-            }
+            reset(input, trainImage[pattern]);
 
-            // reset outputs
-            for (int t = PIXEL; t < INPUTS; t++) {
-                input[t] = 0;
-            }
-
-            output = activate(input, weights, true);
+            output = activate(input);
 
             // search for the largest output
             int recognizedNumber = getResult(output);
@@ -184,10 +202,12 @@ public class Learner {
         PATTERNS = numImages;
         PIXEL = numCols * numCols;
         INPUTS = PIXEL + 10;
+        TEST_OFFSET = PATTERNS / 10;
 
         trainLabel = new int[PATTERNS];
         trainImage = new double[PATTERNS][28 * 28];
         weights = new double[INPUTS][INPUTS];
+        bias = new double[INPUTS];
 
         byte[] byteArray = new byte[PATTERNS];
         labels.read(byteArray);
